@@ -1,0 +1,1 @@
+java ./src/com/popepontus/Main.java ./data.txt 1 0
