@@ -1,1 +1,1 @@
-java ./src/com/popepontus/Main.java ./data.txt 1 0
+java ./src/com/popepontus/Main.java ./data.txt 10 5 5000 10

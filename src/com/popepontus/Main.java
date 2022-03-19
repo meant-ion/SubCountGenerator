@@ -18,12 +18,13 @@ import java.util.AbstractMap.SimpleEntry;
 public class Main{
 
     //format for the args written into the command line: file_path minutes_to_recall_function max_num_unique_values
+    //                                                   upper_sub_bound, lower_sub_bound
 
     public static void main(final String[] args) {
 
         //first assert that the number of args passed through is at least two
         //if not, kill execution with error message
-        if (args.length < 3) {
+        if (args.length < 5) {
             System.out.println(" ERROR: need 3 args for file path and interval between executions");
             System.exit(-1);
         }
@@ -34,6 +35,9 @@ public class Main{
         int minutesToRecall = Integer.parseInt(args[1]);
         //grab the max number of unique values before repeats are allowed
         int maxUniques = Integer.parseInt(args[2]);
+        //grab the bounds for the subs
+        int uBound = Integer.parseInt(args[3]);
+        int lBound = Integer.parseInt(args[4]);
 
         //if number of minutes between intervals provided negative, kill exec w/ error message
         if (minutesToRecall < 0) {
@@ -46,12 +50,17 @@ public class Main{
             System.exit(-3);
         }
 
+        if (lBound < 0 || uBound < 0) {
+            System.out.println(" ERROR: Given boundaries for sub counts invalid");
+            System.exit(-4);
+        }
+
         //we convert the period between executions from minutes to milliseconds
         //60 seconds in 1 minute, 1000 milliseconds in 1 second
         long period = (long) minutesToRecall * 60 * 1000;
 
         Timer timer = new Timer();
-        SubTask task = new SubTask(path, maxUniques);
+        SubTask task = new SubTask(path, maxUniques, uBound, lBound);
 
         timer.schedule(task, 0, period);
 
@@ -63,9 +72,11 @@ class SubTask extends TimerTask {
     private static String path = "";
     private final ArrayList<Map.Entry<Integer, Integer>> listOfSubs = new ArrayList<>();
     private final int maxBeforeRepeat;
+    private final int lower;
+    private final int upper;
 
     //generates a totally legitimate count of the current subscribers between 0 and half a million
-    private int generateRandSub() { return (int)(Math.random() * (5000000 + 1) + 0); }
+    private int generateRandSub(int upper, int lower) { return (int)(Math.random() * (upper + 1) + lower); }
 
     @Override
     public void run() {
@@ -103,15 +114,15 @@ class SubTask extends TimerTask {
         //doesn't matter if the denominator > numerator tbh
         //TODO: allow the user to specify the upper and lower bounds for the sub count
 
-        int numer = this.generateRandSub();
-        int denom = this.generateRandSub();
+        int numer = this.generateRandSub(upper, lower);
+        int denom = this.generateRandSub(upper, lower);
 
         Map.Entry<Integer, Integer> entry = new SimpleEntry<>(numer, denom);
 
         //we continue to generate new counts so long as we get different counts
         while (listOfSubs.contains(entry)) {
-            numer = this.generateRandSub();
-            denom = this.generateRandSub();
+            numer = this.generateRandSub(upper, lower);
+            denom = this.generateRandSub(upper, lower);
             //remake the old object b/c I can't change the key alongside the value
             entry = new SimpleEntry<>(numer, denom);
         }
@@ -135,8 +146,10 @@ class SubTask extends TimerTask {
 
     }
 
-    public SubTask(String p, int m) {
+    public SubTask(String p, int m, int u, int l) {
         path = p;
         maxBeforeRepeat = m;
+        lower = l;
+        upper = u;
     }
 }
